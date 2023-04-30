@@ -144,11 +144,8 @@
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
 		mediatek,mtd-eeprom = <&radio 0x0>;
+		mediatek,disable-radar-background;
 	};
-};
-
-&pcie2 {
-	status = "disabled";
 };
 
 &gmac0 {
@@ -172,7 +169,6 @@
 };
 
 &switch0 {
-	compatible = "mediatek,mt7530";
 	ports {
 		port@1 {
 			status = "okay";

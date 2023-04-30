@@ -40,6 +40,8 @@ define KernelPackage/bluetooth
 	CONFIG_BT_BNEP \
 	CONFIG_BT_HCIBTUSB \
 	CONFIG_BT_HCIBTUSB_BCM=n \
+	CONFIG_BT_HCIBTUSB_MTK=y \
+	CONFIG_BT_HCIBTUSB_RTL=y \
 	CONFIG_BT_HCIUART \
 	CONFIG_BT_HCIUART_BCM=n \
 	CONFIG_BT_HCIUART_INTEL=n \
@@ -54,7 +56,8 @@ define KernelPackage/bluetooth
 	$(LINUX_DIR)/net/bluetooth/hidp/hidp.ko \
 	$(LINUX_DIR)/drivers/bluetooth/hci_uart.ko \
 	$(LINUX_DIR)/drivers/bluetooth/btusb.ko \
-	$(LINUX_DIR)/drivers/bluetooth/btintel.ko
+	$(LINUX_DIR)/drivers/bluetooth/btintel.ko \
+	$(LINUX_DIR)/drivers/bluetooth/btrtl.ko
   AUTOLOAD:=$(call AutoProbe,bluetooth rfcomm bnep hidp hci_uart btusb)
 endef
 
@@ -240,23 +243,72 @@ endef
 $(eval $(call KernelPackage,gpio-f7188x))
 
 
-define KernelPackage/gpio-mcp23s08
+define KernelPackage/lkdtm
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Linux Kernel Dump Test Tool Module
+  KCONFIG:=CONFIG_LKDTM
+  FILES:=$(LINUX_DIR)/drivers/misc/lkdtm/lkdtm.ko
+  AUTOLOAD:=$(call AutoProbe,lkdtm)
+endef
+
+define KernelPackage/lkdtm/description
+ This module enables testing of the different dumping mechanisms by inducing
+ system failures at predefined crash points.
+endef
+
+$(eval $(call KernelPackage,lkdtm))
+
+
+define KernelPackage/pinctrl-mcp23s08
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Microchip MCP23xxx I/O expander
-  DEPENDS:=@GPIO_SUPPORT +kmod-i2c-core +kmod-regmap-i2c
-  KCONFIG:= \
-	CONFIG_GPIO_MCP23S08 \
-	CONFIG_PINCTRL_MCP23S08
-  FILES:= \
-	$(LINUX_DIR)/drivers/pinctrl/pinctrl-mcp23s08.ko
+  HIDDEN:=1
+  DEPENDS:=@GPIO_SUPPORT +kmod-regmap-core
+  KCONFIG:=CONFIG_PINCTRL_MCP23S08
+  FILES:=$(LINUX_DIR)/drivers/pinctrl/pinctrl-mcp23s08.ko
   AUTOLOAD:=$(call AutoLoad,40,pinctrl-mcp23s08)
 endef
 
-define KernelPackage/gpio-mcp23s08/description
- Kernel module for Microchip MCP23xxx SPI/I2C I/O expander
+define KernelPackage/pinctrl-mcp23s08/description
+  Kernel module for Microchip MCP23xxx I/O expander
 endef
 
-$(eval $(call KernelPackage,gpio-mcp23s08))
+$(eval $(call KernelPackage,pinctrl-mcp23s08))
+
+
+define KernelPackage/pinctrl-mcp23s08-i2c
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Microchip MCP23xxx I/O expander (I2C)
+  DEPENDS:=@GPIO_SUPPORT \
+	+kmod-pinctrl-mcp23s08 \
+	+kmod-i2c-core \
+	+kmod-regmap-i2c
+  KCONFIG:=CONFIG_PINCTRL_MCP23S08_I2C
+  FILES:=$(LINUX_DIR)/drivers/pinctrl/pinctrl-mcp23s08_i2c.ko
+  AUTOLOAD:=$(call AutoLoad,40,pinctrl-mcp23s08-i2c)
+endef
+
+define KernelPackage/pinctrl-mcp23s08-i2c/description
+  Kernel module for Microchip MCP23xxx I/O expander via I2C
+endef
+
+$(eval $(call KernelPackage,pinctrl-mcp23s08-i2c))
+
+
+define KernelPackage/pinctrl-mcp23s08-spi
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Microchip MCP23xxx I/O expander (SPI)
+  DEPENDS:=@GPIO_SUPPORT +kmod-pinctrl-mcp23s08
+  KCONFIG:=CONFIG_PINCTRL_MCP23S08_SPI
+  FILES:=$(LINUX_DIR)/drivers/pinctrl/pinctrl-mcp23s08_spi.ko
+  AUTOLOAD:=$(call AutoLoad,40,pinctrl-mcp23s08-spi)
+endef
+
+define KernelPackage/pinctrl-mcp23s08-spi/description
+  Kernel module for Microchip MCP23xxx I/O expander via SPI
+endef
+
+$(eval $(call KernelPackage,pinctrl-mcp23s08-spi))
 
 
 define KernelPackage/gpio-nxp-74hc164
@@ -417,23 +469,6 @@ endef
 $(eval $(call KernelPackage,mmc))
 
 
-define KernelPackage/mvsdio
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=Marvell MMC/SD/SDIO host driver
-  DEPENDS:=+kmod-mmc @TARGET_kirkwood
-  KCONFIG:= CONFIG_MMC_MVSDIO
-  FILES:= \
-	$(LINUX_DIR)/drivers/mmc/host/mvsdio.ko
-  AUTOLOAD:=$(call AutoProbe,mvsdio,1)
-endef
-
-define KernelPackage/mvsdio/description
- Kernel support for the Marvell SDIO host driver.
-endef
-
-$(eval $(call KernelPackage,mvsdio))
-
-
 define KernelPackage/sdhci
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Secure Digital Host Controller Interface support
@@ -503,6 +538,7 @@ define KernelPackage/ssb
 	CONFIG_SSB_DRIVER_MIPS=n \
 	CONFIG_SSB_DRIVER_PCICORE=y \
 	CONFIG_SSB_DRIVER_PCICORE_POSSIBLE=y \
+	CONFIG_SSB_FALLBACK_SPROM=y \
 	CONFIG_SSB_PCIHOST=y \
 	CONFIG_SSB_PCIHOST_POSSIBLE=y \
 	CONFIG_SSB_POSSIBLE=y \
@@ -527,6 +563,7 @@ define KernelPackage/bcma
 	CONFIG_BCMA \
 	CONFIG_BCMA_POSSIBLE=y \
 	CONFIG_BCMA_BLOCKIO=y \
+	CONFIG_BCMA_FALLBACK_SPROM=y \
 	CONFIG_BCMA_HOST_PCI_POSSIBLE=y \
 	CONFIG_BCMA_HOST_PCI=y \
 	CONFIG_BCMA_HOST_SOC=n \
@@ -799,7 +836,8 @@ define KernelPackage/ramoops
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Ramoops (pstore-ram)
   DEFAULT:=m if ALL_KMODS
-  KCONFIG:=CONFIG_PSTORE_RAM
+  KCONFIG:=CONFIG_PSTORE_RAM \
+	CONFIG_PSTORE_CONSOLE=y
   DEPENDS:=+kmod-pstore +kmod-reed-solomon
   FILES:= $(LINUX_DIR)/fs/pstore/ramoops.ko
   AUTOLOAD:=$(call AutoLoad,30,ramoops,1)
@@ -990,6 +1028,10 @@ define KernelPackage/zram/config
   config ZRAM_DEF_COMP_LZ4
             bool "lz4"
             select PACKAGE_kmod-lib-lz4
+
+  config ZRAM_DEF_COMP_LZ4HC
+            bool "lz4-hc"
+            select PACKAGE_kmod-lib-lz4hc
 
   config ZRAM_DEF_COMP_ZSTD
             bool "zstd"
